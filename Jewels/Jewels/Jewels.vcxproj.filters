@@ -33,6 +33,12 @@
     <ClInclude Include="JewelsController.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="JewelsPiece.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JewelsView.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Scene.cpp">
@@ -54,6 +60,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="JewelsController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="JewelsPiece.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

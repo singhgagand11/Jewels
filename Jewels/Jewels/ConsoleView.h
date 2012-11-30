@@ -11,7 +11,7 @@ class ConsoleView {
     JewelsModel *model;
     int pieces;
     int size;
-    void deleteBoard(int **board, int rowSize);
+    void deleteBoard(JewelsPiece **board, int rowSize);
 
   public:
     ConsoleView(int, int);

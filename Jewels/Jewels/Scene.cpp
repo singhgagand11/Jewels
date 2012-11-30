@@ -5,8 +5,6 @@
  **/
 
 #include "Scene.h"
-#include "JewelsModel.h"
-#include "JewelsController.h"
 
 int winWidth, winHeight; 
  
@@ -59,6 +57,11 @@ static GLfloat currentTrans[3] = {0.0, 0.0, 0.0};
  GLfloat diffuseYellow[] = {1.0, 0.0, 1.0, 1.0};
  GLfloat diffuseRed[] = {1.0, 0.0, 0.0, 1.0};
 
+ GLfloat diffuseSelectedBlue[] = {0.5, 0.5, 1.0, 1.0};
+ GLfloat diffuseSelectedGreen1[] = {0.5, 0.8, 0.5, 1.0};
+ GLfloat diffuseSelectedYellow[] = {1.0, 0.5, 1.0, 1.0};
+ GLfloat diffuseSelectedRed[] = {1.0, 0.5, 0.5, 1.0};
+
  const int totalPieces = 4;
  const int boardSize = 8;
  const int similarAdjTileLimit = 2;
@@ -67,9 +70,16 @@ static GLfloat currentTrans[3] = {0.0, 0.0, 0.0};
                       diffuseGreen1,
                       diffuseYellow,
                       diffuseRed}; 
+ GLfloat* selectedColors[] = {diffuseSelectedBlue, 
+                      diffuseSelectedGreen1,
+                      diffuseSelectedYellow,
+                      diffuseSelectedRed}; 
 
-JewelsModel jewelsModel = JewelsModel(totalPieces, boardSize, similarAdjTileLimit);
-JewelsController jewelsController = JewelsController(&jewelsModel);
+JewelsModel *jewelsModel = NULL; //JewelsModel(totalPieces, boardSize, similarAdjTileLimit);
+
+JewelsController *jewelsController = NULL;// = JewelsController(&jewelsModel);
+list<pair<int,int>> tilesRemoved = list<pair<int,int>>();
+JewelsPiece** removeBoard = NULL; 
 //--------------------------------------------------------- 
 //   Set up the view 
  
@@ -366,14 +376,46 @@ void processHits(GLint hits, GLuint buffer[])
      int name = *(nearest + 3);
      int row = name / boardSize;
      int col = name % boardSize;
-    // printf ("You have selected piece %d %d\n", row, col);
+     printf ("You have selected piece %d %d\n", row, col);
      handleClick(row, col);
    };
    //printf("**************************************************************\n");
 }
 
 void handleClick(int row, int col) {
-  jewelsController.handleClick(row, col);
+  removeBoard = jewelsModel->getBoard();
+  set<pair<int,int>> tiles = jewelsController->handleClick(row, col);
+  for each(pair<int,int> tile in tiles) {
+    tilesRemoved.push_back(tile);
+  };
+  if (!tilesRemoved.empty()) {
+    list<pair<int,int> > click = jewelsController->getClicks();
+    pair<int,int> first = click.front();
+    pair<int,int> second = click.back();
+    int piece = removeBoard[first.first][first.second].getPiece();
+    removeBoard[first.first][first.second].setPiece(removeBoard[first.first][first.second].getPiece());
+    removeBoard[first.first][first.second].setIsSelected(true);
+    removeBoard[second.first][second.second].setPiece(piece);
+    removeBoard[second.first][second.second].setIsSelected(true);
+
+    jewelsController->clearClicks();
+    animateRemove(1);
+  };
+  
+};
+
+void animateRemove(int step) {
+  if (!tilesRemoved.empty()) {
+    pair<int, int> tile = tilesRemoved.front();
+    tilesRemoved.pop_front();
+    removeBoard[tile.first][tile.second].setIsSelected(true);
+    display();
+    glutTimerFunc(100, animateRemove, 1);
+  }
+  else{
+  removeBoard = jewelsModel->getBoard();
+  display();
+  };
 };
  
 //--------------------------------------------------------- 
@@ -409,10 +451,34 @@ void display (void) {
    glutSwapBuffers(); 
 } 
 
+void drawRepaint (JewelsPiece ** board) { 
+   // this code executes whenever the window is redrawn (when opened, 
+   //   moved, resized, etc. 
+   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+ 
+   // set the viewing transform 
+   setUpView(); 
+ 
+   // set up light source 
+   setUpLight(); 
+ 
+   // start drawing objects 
+   setUpModelTransform(); 
+ 
+   glPushMatrix(); 
+   glMultMatrixf((GLfloat *) objectXform); 
+   drawObjs(GL_RENDER); 
+   glPopMatrix(); 
+ 
+   glutSwapBuffers(); 
+} 
+
 void drawObjs(GLenum mode){
 	// save the transformation state
   glPushMatrix();
-    int ** board = jewelsModel.getBoard();
+    JewelsPiece **board =  removeBoard;
+    if (board == NULL) 
+      board = jewelsModel->getBoard();
     float totalXSpace =  (2 * totalPieces - 1) / 2.0;
     //center the board
     glTranslatef(-totalXSpace, totalXSpace, 0);
@@ -421,8 +487,13 @@ void drawObjs(GLenum mode){
       for (int row = 0; row < boardSize; row++) {
         glPushMatrix();
           for (int col = 0; col < boardSize; col++) {
-            int color = board[row][col];
-            glMaterialfv(GL_FRONT, GL_DIFFUSE, colors[color]);
+            JewelsPiece piece = board[row][col];
+            int color = piece.getPiece();
+            GLfloat * material = colors[color];
+            
+            if (piece.getIsSelected()) 
+              material = selectedColors[color];
+            glMaterialfv(GL_FRONT, GL_DIFFUSE, material);
             int name = (row * boardSize) + col;
             if (mode == GL_SELECT) glLoadName(name);
             drawJewel();
@@ -440,15 +511,26 @@ void drawObjs(GLenum mode){
   glutStrokeCharacter(GLUT_STROKE_ROMAN, 's');  
   glPopMatrix();
   
- // glRasterPos2d(0, 0);
-  //glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 'd');
+};
+
+void flash(int step)
+{
+  display();
+};
+void repaint()
+{
+ 
+ //   time_t end = clock() + CLOCKS_PER_SEC/4;
   
-}; 
+   // glutTimerFunc(1, flash, 100);    
+   // while(clock() < end) {
+    //};
+}
 
 void jewels3d(GLenum mode){
 	// save the transformation state
   glPushMatrix();
-    int ** board = jewelsModel.getBoard();
+    JewelsPiece ** board = (JewelsPiece**)jewelsModel->getBoard();
     float totalXSpace =  (2 * totalPieces - 1) / 2.0;
     //center the board
     glTranslatef(-totalXSpace, totalXSpace, 0);
@@ -459,7 +541,7 @@ void jewels3d(GLenum mode){
         glPushMatrix();
         int rotate = boardSize / 4;
           for (int col = 0; col < boardSize; col++) {
-            int color = board[row][col];
+            int color = board[row][col].getPiece();
             glMaterialfv(GL_FRONT, GL_DIFFUSE, colors[color]);
             int name = (row * boardSize) + col;
             if (mode == GL_SELECT) glLoadName(name);
@@ -480,13 +562,10 @@ void jewels3d(GLenum mode){
   glPopMatrix();
 };
 
-void drawCone(){
-  glPushMatrix();
-    glRotatef(-90, 1, 0 ,0);
-    glutSolidCone(2, 2, 36, 36);
-  glPopMatrix();
-};
+void drawCylinder(int width)
+{
 
+};
 void drawJewel(){
   glPushMatrix();
     glutSolidSphere(.5, 4, 4);
@@ -494,6 +573,10 @@ void drawJewel(){
 };
 
 void init(int argc, char* argv[]) {
+  jewelsModel =  new JewelsModel(totalPieces, boardSize, similarAdjTileLimit);
+  jewelsController = new JewelsController(jewelsModel);
+  jewelsModel->setView(&repaint);
+
 	glutInit(&argc, argv); 
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH); 
 	glutInitWindowSize(500, 500); 

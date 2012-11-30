@@ -10,7 +10,9 @@ class JewelsController {
     set<pair<int,int>> handleClick(int x, int y);
     JewelsController(JewelsModel *model);
     list<pair<int,int>> getClicks();  
-    bool isValidClick(int x, int y);  
+    bool isValidClick(int x, int y); 
+   
+    void clearClicks();
   private:
     JewelsModel *model;
     list<pair<int, int>> clicks;

@@ -27,7 +27,7 @@ ConsoleView::~ConsoleView() {
 };
 
 void ConsoleView::display() {
-  int **board = ConsoleView::model->getBoard();
+  JewelsPiece **board = ConsoleView::model->getBoard();
   cout << "  ";
  
   for(int row = 0; row < size; row++)
@@ -41,7 +41,7 @@ void ConsoleView::display() {
   for (int row = 0; row < size; row++) {
   cout << row << "|";
     for (int col = 0; col < size; col++) {
-      cout << board[row][col] << " ";
+      cout << board[row][col].getPiece() << " ";
     } 
     cout << endl;
   }
@@ -49,7 +49,7 @@ void ConsoleView::display() {
   deleteBoard(board, size);
 };
 
-void ConsoleView::deleteBoard(int **board, int rowSize) {
+void ConsoleView::deleteBoard(JewelsPiece **board, int rowSize) {
   //FOR each column 
   for (int row = 0; row < rowSize; row++) {
     //delete the ptr at that column

@@ -78,6 +78,8 @@
     <ClInclude Include="Dir.h" />
     <ClInclude Include="JewelsController.h" />
     <ClInclude Include="JewelsModel.h" />
+    <ClInclude Include="JewelsPiece.h" />
+    <ClInclude Include="JewelsView.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Utility.h" />
   </ItemGroup>
@@ -87,6 +89,7 @@
     <ClCompile Include="JewelsController.cpp" />
     <ClCompile Include="JewelsModel.cpp" />
     <ClCompile Include="JewelsMain.cpp" />
+    <ClCompile Include="JewelsPiece.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>

@@ -15,6 +15,12 @@
 #include <math.h>
 #include <queue>
 #include <iostream>
+#include "JewelsModel.h"
+#include "JewelsController.h"
+#include "JewelsPiece.h"
+#include <ctime>
+
+using namespace std;
 
 
 #ifndef UTILITY
@@ -44,14 +50,18 @@ float* color(float slope);
 void setUpProjection(int w, int h);
 void processHits(GLint hits, GLuint buffer[]);
 void handleClick(int row, int col);
-/**
- * initialize open gl scene and start rendering
- * @param argc number of command line argument
- * @param argv array of command line argument
- **/
-void init(int argc, char* argv[]);
 void drawObjs(GLenum mode);
-void drawCone();
+void drawCylinder();
 void drawJewel();
+void mouseMotion(int x, int y);
+void keyCallback(unsigned char key, int x, int y);
 
+/**
+* initialize open gl scene and start rendering
+* @param argc number of command line argument
+* @param argv array of command line argument
+**/
+void init(int argc, char* argv[]);
+void repaint(JewelsPiece ** board);
+void animateRemove(int step);
 #endif

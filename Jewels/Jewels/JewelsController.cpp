@@ -3,21 +3,32 @@
 set<pair<int,int>> JewelsController::handleClick(int x, int y){
    set<pair<int,int>> tilesRemoved = set<pair<int,int>>();
    if (clicks.empty()) {
-    if (isValidClick(x, y))
+    if (isValidClick(x, y)) {
       clicks.push_back(pair<int,int>(x,y));
+      model->selectPiece(x,y);
+     }
    }else {
     if (isValidMove(x, y)) {
       pair<int,int> firstClick = clicks.front();
+      model->selectPiece(x, y);
       tilesRemoved = model->makeMove(firstClick.first, firstClick.second,
                                     x, y);
-      clicks.clear();
-    }
-    else {
-      clicks.clear();
-    };
+      
+       model->deselectPiece(firstClick.first, firstClick.second);
+       model->deselectPiece(x,y);
+       clicks.push_back(pair<int,int>(x,y));
+     // clicks.clear();
+    }else{
+      pair<int, int> fClick = clicks.back();
+      model->deselectPiece(fClick.first, fClick.second);
+     }
    };
    return tilesRemoved;
 };
+
+ 
+
+void JewelsController::clearClicks() { clicks.clear();};
 
 bool JewelsController::isValidClick(int x, int y) {
   if ( x >= 0 && x < boardSize &&

@@ -4,11 +4,11 @@ JewelsModel::JewelsModel(int totalPieces, const int boardSize, int similarAdjTil
 totalPieces(totalPieces), similarAdjTileLimit(similarAdjTileLimit), score(0) {
 
   //SET board to boardSize ptr of int 
-  board = new int* [boardSize];
+  board = new JewelsPiece* [boardSize];
   //FOR each column in boardSize
   for (int col = 0; col < boardSize; col++) {
     //set the the ptr to current board column to array of boardSize integers
-    board[col] = new int[boardSize];
+    board[col] = new JewelsPiece[boardSize];
   };
   //seed the random # generator  
   srand(1);
@@ -17,6 +17,7 @@ totalPieces(totalPieces), similarAdjTileLimit(similarAdjTileLimit), score(0) {
 };
 
 void JewelsModel::initModel() {
+/**
   //FOR each row in the board
   for (int row = 0; row < boardSize; row++) {
     //FOR each col in the board
@@ -25,6 +26,7 @@ void JewelsModel::initModel() {
       board[row][col] = -1;
     }
   }
+  **/
   //FOR each row in the board
   for (int row = 0; row < boardSize; row++) {
     //FOR each col in the board
@@ -36,12 +38,16 @@ void JewelsModel::initModel() {
 };
 
 void JewelsModel::setRandPiece(int x, int y) {
+ 
+  board[x][y].setIsSelected(false);
+  board[x][y].setIsVisible(true);
+  board[x][y].setToRemove(false);
   int ran = rand() % totalPieces;
-  board[x][y] = ran;
+  board[x][y].setPiece(ran);
   while ( (getLeftRightAdjacentTiles(x, y).size() > similarAdjTileLimit ) ||
           (getTopBottomAdjacentTiles(x, y).size() > similarAdjTileLimit)) {
-    board[x][y] = (board[x][y] + 1) % totalPieces;
-    if (board[x][y] == ran) {
+    board[x][y].setPiece((board[x][y].getPiece() + 1) % totalPieces);
+    if (board[x][y].getPiece() == ran) {
       printf("RAND GENERATOR ERROR, NO VALID PIECE TO SET");
       break;
     }
@@ -63,36 +69,18 @@ set<pair<int, int>> JewelsModel::makeMove(int fromX, int fromY, int toX, int toY
   //IF the two points are within the board
   if (isValidPoint(fromX, fromY) && isValidPoint(toX, toY)) {
     //save the piece and swap the two pieces
-    int from = board[fromX][fromY];
-    int to = board[toX][toY];
-    board[fromX][fromY] = to;
-    board[toX][toY] = from;
-    
-    //get all the similiar adjancet tiles
-    //set<pair<int, int>> adjacentTiles = set<pair<int,int>>();
-    
-    //set<pair<int, int>> validFromAdjacentTiles = getValidAdjacentTiles(fromX, fromY); // getAdjacentTiles(fromX, fromY);
-    
+    int from = board[fromX][fromY].getPiece();
+    int to = board[toX][toY].getPiece();
+    board[fromX][fromY].setPiece(to);
+    board[toX][toY].setPiece(from);    
     adjacentTiles = getValidAdjacentTiles(fromX, fromY);
-    //IF there at least three similar adjacent pieces
-    //if (validFromAdjacentTiles.size() > similarAdjTileLimit) {
-      //add the from adjacent tiles to adjacent tiles
-      //adjacentTiles.insert(validFromAdjacentTiles.begin(), validFromAdjacentTiles.end());
-    //}
-    
-
-    
+      
     //if the two pieces are different
     if (from != to) {
       
       //find the all the similiar adjacent tiles for the second piece
       set<pair<int,int>> validToAdjacentTiles = getAdjacentTiles(toX, toY);
-      
-      //IF there at least three similar adjacent pieces
-      //if (validToAdjacentTiles.size() > similarAdjTileLimit) {
-        //add the to adjacent tiles to adjacent tiles
-        adjacentTiles.insert(validToAdjacentTiles.begin(), validToAdjacentTiles.end());
-      //}
+      adjacentTiles.insert(validToAdjacentTiles.begin(), validToAdjacentTiles.end());
     }
     
     //IF the set of adjacent tiles is not empty
@@ -102,8 +90,8 @@ set<pair<int, int>> JewelsModel::makeMove(int fromX, int fromY, int toX, int toY
     }
     //else swap the pieces back
     else {
-      board[fromX][fromY] = from;
-      board[toX][toY] = to;
+      board[fromX][fromY].setPiece(from);
+      board[toX][toY].setPiece(to);
     }
   };   
   
@@ -144,6 +132,12 @@ void JewelsModel::removeAccessValidTiles(set<pair<int,int>> removedTiles) {
 
 void JewelsModel::removeTiles(set<pair<int, int>> tiles) {
 
+  for(set<pair<int,int> >::iterator index = tiles.begin(); 
+        index != tiles.end(); ++index) {
+        board[index->first][index->second].setToRemove(true);
+        
+  };
+  JewelsModel::repaint();
   //FOR each row tile position
   for (int row = 0; row < JewelsModel::boardSize; row++) {
     //FOR each column tile position
@@ -152,11 +146,12 @@ void JewelsModel::removeTiles(set<pair<int, int>> tiles) {
       if (tiles.count(pair<int,int>(row, col)) != 0) {
         //SET cNewTile to current tile row
         int rNewTile = row;
-
+         
         //WHILE the position to add the tile at is not the top most row
         while (rNewTile > 0 ) {
           //SET the current position of the tile to the one above it
           board[rNewTile][col] = board[rNewTile - 1][col];
+          board[rNewTile][col].setToRemove(false);
           rNewTile--; 
         };
         //SET a new random tile at the top most position
@@ -164,6 +159,7 @@ void JewelsModel::removeTiles(set<pair<int, int>> tiles) {
       };
     };
   };
+ 
   score+= tiles.size();
 };
 
@@ -173,15 +169,15 @@ set<pair<int,int>> JewelsModel::getTopBottomAdjacentTiles(int x, int y) {
   set<pair<int, int>> tiles = set<pair<int,int>>();
 
   //SET tile piece to the piece at x y on the board
-  int tilePiece = JewelsModel::board[x][y];
+  int tilePiece = JewelsModel::board[x][y].getPiece();
   
   //FOR each tile above the x y and is the same as tilePiece THEN
-  for (int row = x; row >= 0 && board[row][y] == tilePiece; row--) {
+  for (int row = x; row >= 0 && board[row][y].getPiece() == tilePiece; row--) {
     //add the tile location to adjacent tiles
     tiles.insert(pair<int,int>(row, y));
   }
   //FOR each tile below the x y and is the same as tilePiece THEN
-  for (int row = x; row < JewelsModel::boardSize && board[row][y] == tilePiece; row++) {
+  for (int row = x; row < JewelsModel::boardSize && board[row][y].getPiece() == tilePiece; row++) {
     //add the tile location to adjacent tiles
     tiles.insert(pair<int,int>(row, y));
   }
@@ -194,15 +190,15 @@ set<pair<int,int>> JewelsModel::getLeftRightAdjacentTiles(int x, int y) {
   set<pair<int, int>> tiles = set<pair<int,int>>();
 
   //SET tile piece to the piece at x y on the board
-  int tilePiece = JewelsModel::board[x][y];
+  int tilePiece = JewelsModel::board[x][y].getPiece();
   
   //FOR each tile to the left of location x y and is the same as tilePiece THEN
-  for (int col = y; col >= 0 && board[x][col] == tilePiece; col--) {
+  for (int col = y; col >= 0 && board[x][col].getPiece() == tilePiece; col--) {
     //add the tile location to adjacent tiles
     tiles.insert(pair<int,int>(x, col));
   }
   //FOR each tile to the right of location x y and is the same as tilePiece THEN
-  for (int col = y; col < JewelsModel::boardSize && board[x][col] == tilePiece; col++) {
+  for (int col = y; col < JewelsModel::boardSize && board[x][col].getPiece() == tilePiece; col++) {
     //add the tile location to adjacent tiles
     tiles.insert(pair<int,int>(x, col));
   }
@@ -232,7 +228,7 @@ set<pair<int,int>> JewelsModel::getValidAdjacentTiles(int x, int y) {
   stack<pair<int,int>> fringe = stack<pair<int,int>>();
   
   //SET piece to tile piece we want to explore 
-  int piece = board[x][y];
+  int piece = board[x][y].getPiece();
   //add  the position of tile whose adjacent tiles we want to explore
   fringe.push(pair<int,int>(x,y));
 
@@ -244,7 +240,7 @@ set<pair<int,int>> JewelsModel::getValidAdjacentTiles(int x, int y) {
 
     //IF the tile at the point is same at the piece we want to explore and
     //the point hasn't been visited already THEN
-    if (board[point.first][point.second] == piece && 
+    if (board[point.first][point.second].getPiece() == piece && 
         adjTiles.count(point) == 0) {
        //mark the point as visited
        adjTiles.insert(point);
@@ -292,20 +288,26 @@ bool JewelsModel::isValidPoint(int x, int y) {
 bool JewelsModel::isGameWon() {
   return false;
 };
+JewelsPiece ** JewelsModel::getBoard() {
+  return createBoard();
+}
 
-int ** JewelsModel::getBoard() {
+JewelsPiece ** JewelsModel::createBoard() {
   //SET copyBoard to new ptr of boardSize
-  int ** copyBoard = new int *[boardSize];
+  JewelsPiece ** copyBoard = new JewelsPiece *[boardSize];
 
   //FOR each row in copyBoard
   for (int row = 0; row < boardSize; row++) {
     //SET board at the current row to array of int
     //of boardSize
-    copyBoard[row] = new int[boardSize];
+    copyBoard[row] = new JewelsPiece[boardSize];
     for (int col = 0; col < boardSize; col++) {
       //SET the tile at current position in copyboard to
       //to our board model
-      copyBoard[row][col] = board[row][col];
+      copyBoard[row][col].setPiece(board[row][col].getPiece());
+      copyBoard[row][col].setIsSelected(board[row][col].getIsSelected());
+      copyBoard[row][col].setIsVisible(board[row][col].getIsVisible());
+      copyBoard[row][col].setToRemove(board[row][col].getToRemove());
     }
   };
   //RETURN the copy board
@@ -314,5 +316,23 @@ int ** JewelsModel::getBoard() {
 
 int JewelsModel::getBoardSize() { return boardSize; };
 
+void JewelsModel::setView(void (* repaint)()){
+  viewSet = true;
+  JewelsModel::repaint = repaint;
+
+};
+void JewelsModel::selectPiece(int x, int y) {
+  board[x][y].setIsSelected(true);
+  if (viewSet) {
+   JewelsModel::repaint();
+  };  
+};
+
+void JewelsModel::deselectPiece(int x, int y) {
+  board[x][y].setIsSelected(false);
+  if (viewSet) {
+   JewelsModel::repaint();
+  };  
+};
 static const Dir stuff[] = {Dir::NORTH, Dir::SOUTH, Dir::EAST, Dir::WEST};
 const vector<Dir> JewelsModel::DIRECTIONS = vector<Dir>(stuff, stuff + (sizeof(Dir) * 4));
